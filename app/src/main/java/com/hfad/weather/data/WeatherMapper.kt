@@ -3,6 +3,7 @@ package com.hfad.weather.data
 import com.hfad.weather.domain.Weather
 import org.json.JSONArray
 import org.json.JSONObject
+import java.lang.Integer.max
 
 class WeatherMapper {
 
@@ -15,7 +16,10 @@ class WeatherMapper {
         days.forEachObject { day ->
             val dayData = day.getJSONObject("day")
             val condition = dayData.getJSONObject("condition")
-
+            val chance = max(
+                dayData.getInt("daily_chance_of_snow"),
+                dayData.getInt("daily_chance_of_rain")
+            ).toString()
             result.add(Weather(
                 city = city,
                 day.getString("date"),
@@ -24,7 +28,9 @@ class WeatherMapper {
                 condition.getString("icon"),
                 dayData.getString("mintemp_c"),
                 dayData.getString("maxtemp_c"),
-                getWeatherByHours(day.optString("hour", ""), city)
+                getWeatherByHours(day.optString("hour", ""), city),
+                 dayData.getString("maxwind_kph"),
+                chance
             ))
         }
         result[0] = result[0].copy(
@@ -49,7 +55,9 @@ class WeatherMapper {
                 condition.getString("icon"),
                 "",
                 "",
-                emptyList()
+                emptyList(),
+                hour.getString("wind_kph"),
+                max(hour.getString("chance_of_snow").toInt(), hour.getString("chance_of_rain").toInt()).toString()
             ))
         }
         return result.toList()

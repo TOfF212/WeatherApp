@@ -8,12 +8,16 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.hfad.weather.data.WeatherRepositoryImpl
 import com.hfad.weather.domain.Weather
+import com.hfad.weather.domain.WeatherResult
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -36,23 +40,40 @@ class WeatherViewModel(application: Application) : AndroidViewModel(application)
     val dialogError: State<Boolean> get() = _dialogError
 
     private val EMPTY_WEATHER = Weather(
-        "","","", "","","","",emptyList()
+        "","","", "","","","",emptyList(), "",""
     )
 
-    val daysList: StateFlow<List<Weather>> =
+    val state: StateFlow<WeatherUiState> =
         combine(
             _currentCity,
-            refreshTick.onStart { emit(Unit) }
-        ) { city, _ -> city }
-            .flatMapLatest { city -> repository.getWeather(city) }
-            .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+            refreshTick.onStart {emit(Unit) }
+        ){
+            city, _ -> city
+        }.flatMapLatest { city ->
+                repository.getWeather(city)
+                    .map { res ->
+                        when(res){
+                            is WeatherResult.Loading -> WeatherUiState.Loading
+                            is WeatherResult.Error -> WeatherUiState.Error(res.message)
+                            is WeatherResult.Success -> WeatherUiState.Success(res.data)
+                        }
+                    }
+            }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, WeatherUiState.Loading)
 
+
+
+    private val lastSuccessList: List<Weather> = emptyList()
     private val _selectedDay = MutableStateFlow<Weather?>(null)
-
     val currentDay: StateFlow<Weather> =
-        combine(daysList, _selectedDay) { list, selected ->
-            val safeSelected = selected?.takeIf { s -> list.any { it.time == s.time && it.city == s.city } }
-            safeSelected ?: list.firstOrNull() ?: EMPTY_WEATHER
+        combine(state, _selectedDay) { state, selected ->
+            if (state is WeatherUiState.Success){
+                val list = state.list
+                val safeSelected = selected?.takeIf { s -> list.any { it.time == s.time && it.city == s.city } }
+                safeSelected ?: list.firstOrNull() ?: EMPTY_WEATHER
+            } else{
+                EMPTY_WEATHER
+            }
         }.stateIn(viewModelScope, SharingStarted.Lazily, EMPTY_WEATHER)
 
     fun openDialog() {

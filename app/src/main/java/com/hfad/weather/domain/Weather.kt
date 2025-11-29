@@ -8,7 +8,9 @@ data class Weather(
     val conditionIcon: String,
     val minTemp: String,
     val maxTemp: String,
-    val hours: List<Weather>
+    val hours: List<Weather>,
+    val wind: String,
+    val chancePrecipitation: String
 ) {
 
 }

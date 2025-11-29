@@ -24,7 +24,6 @@ class WeatherApi(private val context: android.content.Context) {
                 "&aqi=no" +
                 "&alerts=no"
         val queue = Volley.newRequestQueue(context)
-        var result = ""
 
         val sRequest = StringRequest(
             Request.Method.GET,

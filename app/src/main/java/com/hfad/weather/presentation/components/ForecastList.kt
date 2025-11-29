@@ -21,7 +21,11 @@ import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -31,6 +35,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.hfad.weather.domain.Weather
+import com.hfad.weather.presentation.components.ListItems.AdvancedHourListItem
+import com.hfad.weather.presentation.components.ListItems.DaysListItem
+import com.hfad.weather.presentation.components.ListItems.ListHourItem
 import com.hfad.weather.ui.theme.Pink40
 import com.hfad.weather.ui.theme.Pink80
 import kotlinx.coroutines.launch
@@ -89,7 +96,7 @@ fun DaysList(daysList: List<Weather>, onDayClick: (Weather) -> Unit){
         itemsIndexed(
             daysList
         ){
-                _, item -> ListItem(item, onDayClick)
+                _, item -> DaysListItem(item, onDayClick)
         }
     }
 }
@@ -100,49 +107,27 @@ fun HoursList(hoursList: List<Weather>){
             hoursList
         ){
                 _, item ->
-            ListItem(item, {})
+            HourItemSwitcher(item)
         }
     }
 }
-@Composable
-fun ListItem(item: Weather, onClick: (Weather) -> Unit) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .alpha(1f)
-            .padding(top = 5.dp)
-            .clickable { onClick(item) },
-        colors = CardDefaults.cardColors(containerColor = Pink80, contentColor = Pink40),
-        elevation = CardDefaults.cardElevation(5.dp),
-        shape = RoundedCornerShape(50.dp)
-    ) {
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(5.dp),
-            Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.padding(start = 10.dp)) {
-                Text(
-                    text = item.time, style = TextStyle(fontSize = 20.sp),
-                )
-                Text(
-                    text = item.condition, style = TextStyle(fontSize = 20.sp),
-                )
-            }
-            Text(
-                text = item.currentTemp.ifEmpty { item.maxTemp + "/" + item.minTemp },
-                style = TextStyle(fontSize = 30.sp),
-            )
 
-            AsyncImage(
-                model = "https:${item.conditionIcon}",
-                contentDescription = "im2",
-                modifier = Modifier
-                    .size(35.dp)
-                    .padding(top = 8.dp, end = 8.dp)
-            )
-        }
+
+@Composable
+private fun HourItemSwitcher(item: Weather) {
+    var expanded by remember { mutableStateOf(false) }
+
+    if (expanded) {
+        AdvancedHourListItem(
+            item = item,
+            onClick = { expanded = false }
+        )
+    } else {
+        ListHourItem(
+            item = item,
+            onClick = { expanded = true }
+        )
     }
 }
+
 
